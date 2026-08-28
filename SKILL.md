@@ -95,9 +95,19 @@ presenting so the user sees both comfort and discovery.
    {"title": "...", "description": "...", "sourceName": "Mixtape",
     "destination": "youtube", "tracklist": [{"title": "...", "artist": "..."}]}
    ```
-3. POST it: `bash <skill-dir>/scripts/post_playlist.sh payload.json` — prints the
-   import link and expiry on success.
-4. Hand over the link with: 有效期 24 小时;打开 → 确认目标平台 → 导入。That
+3. **Canonicalize before posting** — this step is what makes imports actually
+   match: `python3 <skill-dir>/scripts/canonicalize.py payload.json --country <storefront>`.
+   Soundiiz matches on near-exact title+artist text, and official credits are
+   rarely what you'd guess ("Rumble" is credited "Skrillex, Fred again.. &
+   Flowdan"; Peggy Gou's title is "(It Goes Like) Nanana"; Taiwanese bands may use
+   English names on Western storefronts). The script rewrites every track to the
+   Apple catalog's exact spelling (helps all destinations, since it also proves the
+   song exists as written) and reports unconfirmed tracks — replace those before
+   posting, they will not import. Use the user's storefront country (record it in
+   `taste.md` next to the platform, e.g. GB).
+4. POST the canonicalized file: `bash <skill-dir>/scripts/post_playlist.sh payload.canonical.json`
+   — prints the import link and expiry on success.
+5. Hand over the link with: 有效期 24 小时;打开 → 确认目标平台 → 导入。That
    confirmation click doubles as the user's preview/veto step — do not try to
    automate it away.
 
@@ -120,6 +130,10 @@ One line when delivering: 导入后如果有没匹配上或踩雷的歌，说一
 
 ## When things break
 
+- Tracks still 未找到 on import despite canonical names → Soundiiz's batch matcher
+  itself flakes (even "One More Time — Daft Punk" can fail once). Re-issue just the
+  missing tracks as a smaller top-up link rather than telling the user to fix them
+  by hand.
 - `Too many requests` → wait 60s, retry once.
 - API error or format change → don't strand the user: deliver the tracklist as
   plain text plus manual path (soundiiz.com → Import playlist → paste text), and
