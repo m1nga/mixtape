@@ -114,6 +114,9 @@ presenting so the user sees both comfort and discovery.
 5. Hand over the link with: 有效期 24 小时;打开 → 确认目标平台 → 导入。That
    confirmation click doubles as the user's preview/veto step — do not try to
    automate it away.
+6. For an iteration, finish the platform-side reconciliation below after the
+   import succeeds. A new import link is an implementation detail, not permission
+   to leave duplicate or version-numbered playlists in the user's library.
 
 **Destination preselect** (`destination` field): verified corenames `spotify`,
 `ytmusic` (YouTube Music), `youtube` (plain YouTube video playlist — prefer
@@ -123,31 +126,78 @@ field and tell the user to pick Apple Music on the import page (one tap; their
 Soundiiz account holds the platform authorization). Remember the user's platform in
 `taste.md` and stop asking.
 
-## Iteration: one complete playlist per version
+## Iteration: one living playlist with a stable identity
 
-A revision is never a patch and never a restart. Start from the previous version's
-tracklist in `history.md`, keep every track the user hasn't vetoed, apply the
-changes (swaps, new ratios, extensions), and ship **one complete replacement
-playlist** with a versioned title (v2, v3…) — telling the user to delete the
-previously imported one. The user's confirmed-loved tracks are the asset being
-built; a from-scratch regeneration throws that away, and a patch link leaves them
-managing fragments. Log each version's lineage in `history.md` (迭代自 vN).
+A revision is never a patch, a restart, or a second product. Start from the
+previous tracklist in `history.md`, keep every track the user has not vetoed, and
+apply swaps, ratio changes, or extensions to the complete list. The user's
+confirmed-loved tracks are the asset being built.
+
+Keep the accepted user-facing title stable across revisions. **Never add v2/v3/v4,
+“修复版”, or similar release bookkeeping to the title in the streaming library
+unless the user explicitly asks for it.** Record revision numbers and lineage only
+inside `history.md`. If direct in-place editing is unavailable and Soundiiz must
+create a replacement, that replacement is temporary until the library is
+reconciled: the user should end with exactly one current playlist under the stable
+title, not a stack of versions and not a patch playlist.
+
+After the replacement import succeeds:
+
+1. Read the platform library and resolve the retained playlist plus every
+   Mixtape-managed predecessor by exact platform ID, current name, and track count.
+2. Preserve unrelated playlists even when their names look similar. Never delete
+   by a fuzzy title search or by an unresolved variable/glob.
+3. Check the retained playlist has the expected complete track count, rename it to
+   the stable title, and delete only the explicitly resolved predecessor IDs.
+4. Read the library again. Completion requires one playlist with the stable title,
+   the expected track count, and no predecessor IDs. Log this receipt in
+   `history.md`; do not claim success from the mutation call alone.
+
+On macOS Apple Music, use the guarded helper rather than hand-written destructive
+AppleScript:
+
+```bash
+python3 <skill-dir>/scripts/reconcile_apple_music.py inventory
+python3 <skill-dir>/scripts/reconcile_apple_music.py reconcile manifest.json
+python3 <skill-dir>/scripts/reconcile_apple_music.py reconcile manifest.json --apply
+```
+
+Manifest shape:
+
+```json
+{"stableTitle":"跑步",
+ "keep":{"id":"6073","expectedName":"梦想感起跑 v4","expectedTrackCount":33},
+ "delete":[{"id":"6059","expectedName":"梦想感起跑 v3","expectedTrackCount":8}],
+ "protect":[{"id":"5334","expectedName":"I wonder if you know","expectedTrackCount":1}]}
+```
+
+It names the stable title, retained ID/name/count, and exact predecessor
+IDs/names/counts. Add must-not-change playlists to optional `protect`; they are
+checked before the plan and reported unchanged in the final receipt.
+Reconciliation is dry-run by default; `--apply` refuses stale names, wrong counts,
+unmanaged title collisions, or an ID listed in conflicting roles, then prints a
+verified read-back receipt. Use another authorized platform API/connector for
+other services with the same preflight → mutate → read-back contract. If no
+authorized write surface exists, say so plainly and leave the reconciled state
+unclaimed rather than telling the user a duplicate is “the new version.”
 
 ## After the import (lightweight, never nagging)
 
 One line when delivering: 导入后如果有没匹配上或踩雷的歌，说一声。When they report:
 
-- **缺歌** → append to `misses.md`; the replacements go into the next complete
-  version (a small top-up link only if the user says they prefer patching).
+- **缺歌** → append to `misses.md`; repair the matcher or replace the failures in
+  the next complete iteration. A top-up link is allowed only when the user
+  explicitly asks to manage a patch separately.
 - **踩雷** → record to `taste.md` 雷区 with the *reason* if given (太吵? 年代不对?).
 - Log the mixtape to `history.md` either way.
 
 ## When things break
 
-- Tracks still 未找到 on import despite canonical names → Soundiiz's batch matcher
-  itself flakes (even "One More Time — Daft Punk" can fail once). Re-issue just the
-  missing tracks as a smaller top-up link rather than telling the user to fix them
-  by hand.
+- Tracks still 未找到 on import despite canonical names → treat it as a failed
+  delivery, not user cleanup. Re-check the target storefront, replace or pin the
+  unresolved catalog IDs, regenerate the **complete** signed playlist, then
+  reconcile it back to the stable platform identity. Do not default to a top-up
+  fragment.
 - `Too many requests` → wait 60s, retry once.
 - API error or format change → don't strand the user: deliver the tracklist as
   plain text plus manual path (soundiiz.com → Import playlist → paste text), and

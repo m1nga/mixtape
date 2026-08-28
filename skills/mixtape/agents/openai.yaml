@@ -1,4 +1,4 @@
 interface:
   display_name: "Mixtape"
-  short_description: "Personal playlists with verified one-click imports"
-  default_prompt: "Use $mixtape to turn my mood or seed songs into an authored playlist, verify every track against my storefront, and deliver a one-click import link."
+  short_description: "Personal playlists with verified, stable imports"
+  default_prompt: "Use $mixtape to turn my mood or seed songs into an authored playlist, verify every track against my storefront, and keep future iterations under one stable library title."

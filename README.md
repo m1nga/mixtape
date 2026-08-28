@@ -19,7 +19,9 @@ sequenced playlist you authored. Before it hands anything to Soundiiz, it checks
 every title **and artist** against the destination Apple Music storefront, rejects
 wrong covers/remixes/DJ-mix versions, and produces a catalog evidence report. A
 signed handoff then prevents unverified or subsequently edited tracklists from
-being posted.
+being posted. Iterations keep one stable library identity: revision labels stay in
+the private history, while the streaming playlist keeps its human title and
+superseded Mixtape versions are reconciled away by exact platform ID.
 
 That matching layer matters. A beautiful 33-track recommendation is still a broken
 product when only eight songs arrive in the user's library.
@@ -30,8 +32,9 @@ product when only eight songs arrive in the user's library.
 - Give seed tracks: “these are the three kinds of rock I mean—expand them.”
 - Share existing playlists: “work out what I actually like, then mix familiar songs
   with discoveries.”
-- Report a failed import: Mixtape records misses, repairs the matcher, and ships one
-  complete replacement version instead of making you manage fragments.
+- Report a failed import: Mixtape records misses, repairs the matcher, and updates
+  one complete playlist instead of making you manage fragments or duplicate
+  version-numbered playlists.
 
 ## Design notes
 
@@ -95,6 +98,13 @@ wrong field.
 You get a link valid for 24 hours; the confirmation click doubles as your
 preview/veto step. Limits: ≤200 tracks per link and 10 requests/min.
 
+For Apple Music on macOS, the included reconciliation helper inventories the local
+library, dry-runs an exact-ID plan, then (only with `--apply`) renames the retained
+playlist, deletes explicitly named predecessors, and reads the library back. It
+refuses stale names, unexpected track counts, and unrelated playlists that happen
+to share the final title. Optional protected IDs are also checked and returned as
+unchanged in the final receipt.
+
 ## Field-tested
 
 The bug that prompted the strict pipeline was a two-hour running mix where only
@@ -102,7 +112,9 @@ The bug that prompted the strict pipeline was a two-hour running mix where only
 “fix” reported 0 unconfirmed but had actually changed `The Less I Know the Better —
 Tame Impala` into a similarly titled song by ALB and `Raw Control — Discip` into a
 DubMabs track. The revised matcher now rejects both cases, blocks the post, and
-shows the catalog evidence needed to choose a real replacement.
+shows the catalog evidence needed to choose a real replacement. The verified
+replacement imported all 33 tracks; the final read-back kept one 33-track playlist
+named `跑步` and removed the two superseded managed versions.
 
 ## 中文说明
 
@@ -110,7 +122,8 @@ Mixtape 是给 Claude Code / Codex 用的歌单 skill：一句话描述场景（
 City Pop，20首」）、给几首种子歌，或让它分析你已有歌单；它负责选歌、编排、逐首
 核对 Apple Music 曲库，再给出 Soundiiz 一键导入链接。它会同时校验歌名和歌手，
 找不到或疑似错版就停止发布，不再让“33 首只进去 8 首”到最后一步才暴露。口味档案
-存在本机 `~/.mixtape/`，越用越懂你。
+存在本机 `~/.mixtape/`，越用越懂你。迭代时平台里的歌单名称保持不变，版本号只写进
+内部历史；成功导入后按精确 ID 清理旧版，并回读确认只剩一个当前歌单。
 
 ## Notes
 
