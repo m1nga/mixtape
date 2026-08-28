@@ -13,7 +13,9 @@ Usage: canonicalize.py payload.json [--country gb] [--out payload.canonical.json
 import difflib, json, re, sys, time, urllib.parse, urllib.request
 
 BAD_QUALIFIERS = re.compile(
-    r"\b(mixed|live|karaoke|tribute|cover|instrumental|sped up|slowed|8d|remix)\b", re.I)
+    r"\b(live|karaoke|tribute|cover|instrumental|sped up|slowed|8d|remix)\b", re.I)
+# DJ-mix continuous versions are never what a playlist wants — exclude outright.
+HARD_EXCLUDE = re.compile(r"[\[(]mixed[\])]", re.I)
 
 
 def search(term, country, limit=10):
@@ -49,6 +51,7 @@ def canonicalize(title, artist, country):
         if results:
             break
         time.sleep(0.6)
+    results = [t for t in results if not HARD_EXCLUDE.search(t["trackName"])]
     if not results:
         return None
     best = max(results, key=lambda t: score(t, title, artist))

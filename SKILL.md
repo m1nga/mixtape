@@ -119,12 +119,22 @@ field and tell the user to pick Apple Music on the import page (one tap; their
 Soundiiz account holds the platform authorization). Remember the user's platform in
 `taste.md` and stop asking.
 
+## Iteration: one complete playlist per version
+
+A revision is never a patch and never a restart. Start from the previous version's
+tracklist in `history.md`, keep every track the user hasn't vetoed, apply the
+changes (swaps, new ratios, extensions), and ship **one complete replacement
+playlist** with a versioned title (v2, v3…) — telling the user to delete the
+previously imported one. The user's confirmed-loved tracks are the asset being
+built; a from-scratch regeneration throws that away, and a patch link leaves them
+managing fragments. Log each version's lineage in `history.md` (迭代自 vN).
+
 ## After the import (lightweight, never nagging)
 
 One line when delivering: 导入后如果有没匹配上或踩雷的歌，说一声。When they report:
 
-- **缺歌** → append to `misses.md`, offer replacements — a small top-up link with
-  just the substitutes beats regenerating everything.
+- **缺歌** → append to `misses.md`; the replacements go into the next complete
+  version (a small top-up link only if the user says they prefer patching).
 - **踩雷** → record to `taste.md` 雷区 with the *reason* if given (太吵? 年代不对?).
 - Log the mixtape to `history.md` either way.
 
