@@ -1,4 +1,4 @@
-# Mixtape 🎧
+# Make a Personal Playlist That Actually Imports
 
 **Your own playlist, made by your AI.**
 
@@ -12,7 +12,28 @@ No platform API keys, no developer accounts.
 > "Playlist for cooking on a Friday night, city pop, ~20 tracks, YouTube Music"
 > → a numbered tracklist with an arc, and a link. Open → confirm → it's in your library.
 
-## Why "Mixtape"
+## What it does
+
+Mixtape turns a mood, a few seed songs, or the playlists you already love into a
+sequenced playlist you authored. Before it hands anything to Soundiiz, it checks
+every title **and artist** against the destination Apple Music storefront, rejects
+wrong covers/remixes/DJ-mix versions, and produces a catalog evidence report. A
+signed handoff then prevents unverified or subsequently edited tracklists from
+being posted.
+
+That matching layer matters. A beautiful 33-track recommendation is still a broken
+product when only eight songs arrive in the user's library.
+
+## When it fires
+
+- Describe a scene: “late-night coding, warm electronic, 90 minutes.”
+- Give seed tracks: “these are the three kinds of rock I mean—expand them.”
+- Share existing playlists: “work out what I actually like, then mix familiar songs
+  with discoveries.”
+- Report a failed import: Mixtape records misses, repairs the matcher, and ships one
+  complete replacement version instead of making you manage fragments.
+
+## Design notes
 
 A mixtape is the opposite of an algorithmic playlist: it's *authored*. You bring the
 taste; the agent does the hours of picking, matching, and sequencing you never have
@@ -32,13 +53,13 @@ remembers what failed to match and what you vetoed.
 
 ## Install
 
-**Claude Code**
+Install the standalone skill with the Skills CLI:
 
 ```bash
-git clone https://github.com/m1nga/mixtape.git ~/.claude/skills/mixtape
+npx skills add m1nga/mixtape
 ```
 
-**OpenAI Codex** (skills support since Dec 2025)
+Or clone it directly for a specific agent:
 
 ```bash
 git clone https://github.com/m1nga/mixtape.git ~/.agents/skills/mixtape
@@ -60,21 +81,36 @@ Then just ask for a playlist in a session — no command to memorize.
 ## How it works
 
 The agent generates and sequences the tracklist (real, released recordings only —
-it verifies when unsure), then POSTs it to Soundiiz's free, key-less
-[Playlist Import API](https://soundiiz.com/api/doc/public_import). You get back a
-link valid for 24 hours; the confirmation click on the import page doubles as your
-preview/veto step. Limits: ≤200 tracks per link (auto-split into volumes),
-10 requests/min.
+it verifies when unsure), then checks every title+artist pair against the requested
+Apple Music storefront. The canonicalizer writes the official display metadata, a
+catalog evidence report, and a fingerprint. Only that signed payload can reach
+Soundiiz's free, key-less Playlist Import API.
+
+The Soundiiz contract is deliberately enforced at the last mile: its field is
+`artists` (plural), as an array or string. Sending `artist` appears to work because
+the endpoint accepts the JSON, but the artist is silently ignored and matching
+falls back to the title alone. Mixtape migrates legacy payloads but never sends the
+wrong field.
+
+You get a link valid for 24 hours; the confirmation click doubles as your
+preview/veto step. Limits: ≤200 tracks per link and 10 requests/min.
+
+## Field-tested
+
+The bug that prompted the strict pipeline was a two-hour running mix where only
+8/33 tracks transferred despite Apple Music carrying almost all of them. The first
+“fix” reported 0 unconfirmed but had actually changed `The Less I Know the Better —
+Tame Impala` into a similarly titled song by ALB and `Raw Control — Discip` into a
+DubMabs track. The revised matcher now rejects both cases, blocks the post, and
+shows the catalog evidence needed to choose a real replacement.
 
 ## 中文说明
 
 Mixtape 是给 Claude Code / Codex 用的歌单 skill：一句话描述场景（「周五晚做饭的
-City Pop，20首」）、或给几首种子歌（「我喜欢的摇滚分这两种……照这个扩展30首」）、
-或让它分析你现有歌单的口味，它选歌、编排顺序，然后给你一个 Soundiiz 一键导入
-链接——点开、确认、歌单进你的 Apple Music / YouTube Music。口味档案存在本机
-`~/.mixtape/`，越用越懂你。安装：把仓库 clone 到 `~/.claude/skills/mixtape`
-（Claude Code）或 `~/.agents/skills/mixtape`（Codex），需要一个免费 Soundiiz
-账号并连接你的流媒体平台。
+City Pop，20首」）、给几首种子歌，或让它分析你已有歌单；它负责选歌、编排、逐首
+核对 Apple Music 曲库，再给出 Soundiiz 一键导入链接。它会同时校验歌名和歌手，
+找不到或疑似错版就停止发布，不再让“33 首只进去 8 首”到最后一步才暴露。口味档案
+存在本机 `~/.mixtape/`，越用越懂你。
 
 ## Notes
 
@@ -84,3 +120,7 @@ City Pop，20首」）、或给几首种子歌（「我喜欢的摇滚分这两�
   Soundiiz to build the import link.
 
 MIT © [m1nga](https://github.com/m1nga)
+
+## Author
+
+Built by [Ming](https://github.com/m1nga). The design notes above explain the real problem and tradeoffs that shaped this skill.

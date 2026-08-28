@@ -1,6 +1,6 @@
 ---
 name: mixtape
-description: Make the user their OWN playlist — a mixtape they authored, not another stranger's list — and deliver it as a one-click Soundiiz import link into their streaming account (Apple Music, YouTube, Spotify, Deezer, Tidal; no platform API keys needed). Three modes — quick order (describe a scene/mood/genre → full playlist), seed expansion (user gives a few example songs, optionally grouped by sub-style → more that belong with each group), and taste-profile curation (analyze playlists the user shares, keep a persistent profile in ~/.mixtape/, blend songs they love with adjacent discoveries). Use whenever the user asks for a playlist or for songs to listen to — "make me a playlist", "playlist for late-night coding", 给我来个歌单 / 建个歌单 / 来点适合〇〇的歌 / 根据这几首帮我扩展 / 找类似的歌 / 分析我的听歌口味 — or shares seed songs wanting more like them, even without the word "playlist". NOT for turning documents or text into listenable audio programs, NOT for transferring existing playlists between platforms (plain soundiiz.com does that), NOT for playing or controlling music playback.
+description: Make the user an authored playlist and deliver a verified one-click Soundiiz import link for Apple Music, YouTube Music, Spotify, Deezer, or Tidal without platform API keys. Supports quick orders from a scene or mood, expansion from seed songs, and taste-profile curation from playlists the user shares. Use for "make me a playlist," "songs for late-night coding," 给我来个歌单, 根据这几首帮我扩展, 找类似的歌, 分析我的听歌口味, or any request for songs to listen to. Not for audio narration, transferring an existing playlist unchanged, or controlling playback.
 ---
 
 # Mixtape · 亲手做的歌单
@@ -72,12 +72,11 @@ presenting so the user sees both comfort and discovery.
   "sure": you could name the album or era it came from. Below that bar, verify with
   a web search — an invented song silently becomes a wrong match on import, which
   is worse than one fewer track.
-- **Canonical form matches best**: main title + primary artist (one artist name —
-  multi-artist credits are the likeliest matching failures). Drop "feat.",
-  "(Live)", "(Remix)" qualifiers unless the user wants that specific version —
-  Soundiiz's matcher does better with clean names. For non-Latin catalogs, use the
-  form streaming platforms dominantly list (Japanese/Chinese titles usually stay in
-  the original script; when unsure, original script is the safer match).
+- **Canonical form matches best**: main title + the real artist credit. Keep
+  collaborating artists as separate values in the `artists` array; drop "feat.",
+  "(Live)", and "(Remix)" qualifiers unless the user wants that specific version.
+  For non-Latin catalogs, use the form streaming platforms dominantly list
+  (Japanese/Chinese titles usually stay in the original script).
 - Check `misses.md`; don't re-recommend a track that already failed on the target
   platform.
 - **Order is authorship.** Arrange an arc that fits the scene: workout ramps up,
@@ -93,20 +92,25 @@ presenting so the user sees both comfort and discovery.
 2. Write the payload to a JSON file in the session scratchpad (or any temp dir):
    ```json
    {"title": "...", "description": "...", "sourceName": "Mixtape",
-    "destination": "youtube", "tracklist": [{"title": "...", "artist": "..."}]}
+    "destination": "youtube",
+    "tracklist": [{"title": "...", "artists": ["...", "..."]}]}
    ```
-3. **Canonicalize before posting** — this step is what makes imports actually
-   match: `python3 <skill-dir>/scripts/canonicalize.py payload.json --country <storefront>`.
-   Soundiiz matches on near-exact title+artist text, and official credits are
-   rarely what you'd guess ("Rumble" is credited "Skrillex, Fred again.. &
-   Flowdan"; Peggy Gou's title is "(It Goes Like) Nanana"; Taiwanese bands may use
-   English names on Western storefronts). The script rewrites every track to the
-   Apple catalog's exact spelling (helps all destinations, since it also proves the
-   song exists as written) and reports unconfirmed tracks — replace those before
-   posting, they will not import. Use the user's storefront country (record it in
-   `taste.md` next to the platform, e.g. GB).
-4. POST the canonicalized file: `bash <skill-dir>/scripts/post_playlist.sh payload.canonical.json`
-   — prints the import link and expiry on success.
+3. **Canonicalize before posting**: `python3 <skill-dir>/scripts/canonicalize.py
+   payload.json --country <storefront>`. The script verifies title **and artist**,
+   rejects wrong artists and unwanted versions, rewrites confirmed tracks to the
+   Apple catalog's displayed metadata, and writes an evidence report. It exits
+   nonzero when any track is unconfirmed; replace those tracks and rerun. Use the
+   user's storefront country (record it in `taste.md`, e.g. GB).
+   If free-text search misses a song but an official Apple Music song page proves
+   it exists, add its numeric URL ID as `"appleMusicId": 1702056850` on that track
+   and rerun. The script looks that ID up in the target storefront and still
+   verifies its title+artist; this is evidence, never a bypass.
+4. POST only the signed canonical file: `bash
+   <skill-dir>/scripts/post_playlist.sh payload.canonical.json`. The poster refuses
+   unverified or post-verification edits, strips internal evidence metadata, and
+   sends Soundiiz its documented `artists` field. **Never send `artist` (singular):
+   Soundiiz accepts the request but ignores that field, leaving it to match by title
+   alone.** The script prints the import link and expiry on success.
 5. Hand over the link with: 有效期 24 小时;打开 → 确认目标平台 → 导入。That
    confirmation click doubles as the user's preview/veto step — do not try to
    automate it away.
