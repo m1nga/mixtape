@@ -1,4 +1,4 @@
-# Make a Personal Playlist That Actually Imports
+# Playlist Builder — Get a Verified Playlist You Can Actually Import
 
 **Your own playlist, made by your AI.**
 
