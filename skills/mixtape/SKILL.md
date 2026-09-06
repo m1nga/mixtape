@@ -105,7 +105,11 @@ presenting so the user sees both comfort and discovery.
    it exists, add its numeric URL ID as `"appleMusicId": 1702056850` on that track
    and rerun. The script looks that ID up in the target storefront and still
    verifies its title+artist; this is evidence, never a bypass.
-4. POST only the signed canonical file: `bash
+Apple confirmation establishes catalog identity in that storefront, not matching
+coverage on other destination services. The fingerprint detects later track edits;
+it is not an authenticated signature. Report destination matches separately.
+
+4. POST only the fingerprinted canonical file: `bash
    <skill-dir>/scripts/post_playlist.sh payload.canonical.json`. The poster refuses
    unverified or post-verification edits, strips internal evidence metadata, and
    sends Soundiiz its documented `artists` field. **Never send `artist` (singular):
@@ -195,7 +199,7 @@ One line when delivering: 导入后如果有没匹配上或踩雷的歌，说一
 
 - Tracks still 未找到 on import despite canonical names → treat it as a failed
   delivery, not user cleanup. Re-check the target storefront, replace or pin the
-  unresolved catalog IDs, regenerate the **complete** signed playlist, then
+  unresolved catalog IDs, regenerate the **complete** fingerprinted playlist, then
   reconcile it back to the stable platform identity. Do not default to a top-up
   fragment.
 - `Too many requests` → wait 60s, retry once.

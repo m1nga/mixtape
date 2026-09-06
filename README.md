@@ -16,9 +16,9 @@ No platform API keys, no developer accounts.
 
 Mixtape turns a mood, a few seed songs, or the playlists you already love into a
 sequenced playlist you authored. Before it hands anything to Soundiiz, it checks
-every title **and artist** against the destination Apple Music storefront, rejects
+every title **and artist** against the selected Apple Music storefront, rejects
 wrong covers/remixes/DJ-mix versions, and produces a catalog evidence report. A
-signed handoff then prevents unverified or subsequently edited tracklists from
+fingerprint check then prevents unverified or subsequently edited tracklists from
 being posted. Iterations keep one stable library identity: revision labels stay in
 the private history, while the streaming playlist keeps its human title and
 superseded Mixtape versions are reconciled away by exact platform ID.
@@ -86,7 +86,7 @@ Then just ask for a playlist in a session — no command to memorize.
 The agent generates and sequences the tracklist (real, released recordings only —
 it verifies when unsure), then checks every title+artist pair against the requested
 Apple Music storefront. The canonicalizer writes the official display metadata, a
-catalog evidence report, and a fingerprint. Only that signed payload can reach
+catalog evidence report, and a fingerprint. Only that fingerprinted payload can reach
 Soundiiz's free, key-less Playlist Import API.
 
 The Soundiiz contract is deliberately enforced at the last mile: its field is
@@ -129,10 +129,24 @@ City Pop，20首」）、给几首种子歌，或让它分析你已有歌单；�
 
 - Not affiliated with Soundiiz; uses their public Playlist Import API.
 - Song selection quality depends on the model running the skill.
-- Taste data never leaves your machine — only `{title, artist}` lists are sent to
-  Soundiiz to build the import link.
+- Local taste files are not uploaded by the bundled scripts. Catalog lookups send
+  song queries to Apple; Soundiiz receives the playlist title, description,
+  destination and `{title, artists}` entries. Your agent provider also processes
+  what you put in the conversation.
 
 MIT © [m1nga](https://github.com/m1nga)
+
+## What “verified” covers
+
+Apple catalog confirmation checks recording identity in the selected storefront.
+It does not prove Spotify, YouTube Music or another destination will match every
+track. The local fingerprint detects tracklist edits after that check; it is not
+a cryptographic signature or independent attestation. Final delivery still needs
+the destination import result and, for revisions, the library read-back.
+
+The 15 bundled offline tests passed on 2026-09-07 (Asia/Shanghai), including wrong-artist
+rejection and exact-ID reconciliation. Run `python3 -m unittest discover -s tests -v`
+from the installed skill directory. This is fixture evidence, not a new live import.
 
 ## Author
 
