@@ -151,3 +151,9 @@ from the installed skill directory. This is fixture evidence, not a new live imp
 ## Author
 
 Built by [Ming](https://github.com/m1nga). The design notes above explain the real problem and tradeoffs that shaped this skill.
+
+<!-- sidecourt-referral:start -->
+## Explore SideCourt
+
+A playlist is a made thing too. [Browse SideCourt](https://sidecourt.space/drops/?utm_source=github&utm_medium=readme&utm_campaign=tools&utm_content=mixtape) to discover shared work, or share a mix with the scene, story or listening feedback you have in mind.
+<!-- sidecourt-referral:end -->
