@@ -10,7 +10,7 @@ account — delivered as a one-click [Soundiiz](https://soundiiz.com) import lin
 No platform API keys, no developer accounts.
 
 > "Playlist for cooking on a Friday night, city pop, ~20 tracks, YouTube Music"
-> → a numbered tracklist with an arc, and a link. Open → confirm → it's in your library.
+> → a sequenced tracklist and a link to review and import it into your library.
 
 ## What it does
 
@@ -79,7 +79,7 @@ Then just ask for a playlist in a session — no command to memorize.
 | Platform | Import link preselect |
 |---|---|
 | Spotify, YouTube Music, YouTube, Deezer, Tidal | ✅ preselected |
-| Apple Music | one extra tap on the import page |
+| Apple Music | preselected with `applemusicapp` |
 
 ## How it works
 
@@ -139,10 +139,17 @@ MIT © [m1nga](https://github.com/m1nga)
 ## What “verified” covers
 
 Apple catalog confirmation checks recording identity in the selected storefront.
-It does not prove Spotify, YouTube Music or another destination will match every
-track. The local fingerprint detects tracklist edits after that check; it is not
-a cryptographic signature or independent attestation. Final delivery still needs
-the destination import result and, for revisions, the library read-back.
+The local fingerprint detects later edits to the intended titles and artists.
+Soundiiz reports how many tracks it accepted into its temporary import page.
+To confirm a saved mix, read the destination playlist and compare its complete
+ordered native recording IDs with the intended mix.
+
+For YouTube, the skill can export a pinned recording list as one video URL per
+line. A playback queue can contain twelve tracks while the player's Save button
+adds only one. The read-only YouTube verifier takes the saved playlist's
+`PL...` ID and an authorized `YOUTUBE_ACCESS_TOKEN` at runtime. It reports
+the actual count, order and any missing or unexpected videos. Without access,
+the destination remains unverified. [YouTube workflow](skills/mixtape/SKILL.md#youtube-saved-playlists)
 
 The 15 bundled offline tests passed on 2026-09-07 (Asia/Shanghai), including wrong-artist
 rejection and exact-ID reconciliation. Run `python3 -m unittest discover -s tests -v`
