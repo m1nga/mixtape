@@ -4,13 +4,38 @@
 
 Everyone's library is full of playlists made by strangers and algorithms. Mixtape is
 an [agent skill](https://www.thepromptindex.com/how-to-use-ai-agent-skills-the-complete-guide.html)
-for **Claude Code** and **OpenAI Codex** that turns a described mood, a handful of
-seed songs, or your actual listening taste into a real playlist in your streaming
-account — delivered as a one-click [Soundiiz](https://soundiiz.com) import link.
-No platform API keys, no developer accounts.
+for **Claude Code** and **OpenAI Codex** that sequences a playlist around your
+mood, seed songs, or listening taste. It checks the recordings against an Apple
+Music storefront and gives you a [Soundiiz](https://soundiiz.com) link to import
+into your chosen service. You confirm the import in Soundiiz. No platform API
+keys or developer accounts are required.
 
-> "Playlist for cooking on a Friday night, city pop, ~20 tracks, YouTube Music"
-> → a numbered tracklist with an arc, and a link. Open → confirm → it's in your library.
+> "Make me a five-song late-night electronic mix for YouTube Music. Start with
+> 'A Walk' by Tycho, build gently, and finish somewhere quiet. Use the US
+> storefront for the catalog check."
+
+One sample result, **Low Light, Steady Hands**:
+
+1. Tycho — A Walk
+2. Yppah — Never Mess With Sunday
+3. Bonobo — Kerala
+4. Four Tet — Two Thousand and Seventeen
+5. Brian Eno — An Ending (Ascent)
+
+The live catalog check and local import-payload dry run had these results:
+
+| Check | Sample status |
+|---|---|
+| Apple catalog | 5 of 5 recordings confirmed in the US storefront |
+| Soundiiz link | Dry run accepted the payload for YouTube Music. No link was requested. |
+| YouTube Music library | Import untested |
+
+For a regular playlist request, the link status shows the expiry when Soundiiz
+issues a link. The destination status stays pending until there is import evidence.
+
+After import, compare the count and recording versions in your destination.
+If the link fails, Mixtape can give you a paste-ready `Artist - Title` list for
+[Soundiiz's plain-text import](https://support.soundiiz.com/hc/en-us/articles/37958924057234-How-to-Import-a-Playlist-from-a-URL-CSV-File-or-Plain-Text).
 
 ## What it does
 

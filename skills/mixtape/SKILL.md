@@ -105,9 +105,9 @@ presenting so the user sees both comfort and discovery.
    it exists, add its numeric URL ID as `"appleMusicId": 1702056850` on that track
    and rerun. The script looks that ID up in the target storefront and still
    verifies its title+artist; this is evidence, never a bypass.
-Apple confirmation establishes catalog identity in that storefront, not matching
-coverage on other destination services. The fingerprint detects later track edits;
-it is not an authenticated signature. Report destination matches separately.
+   Apple confirmation covers recording identity in the named storefront. The
+   fingerprint detects later track edits. Destination matches require their own
+   evidence from the transfer result or destination library.
 
 4. POST only the fingerprinted canonical file: `bash
    <skill-dir>/scripts/post_playlist.sh payload.canonical.json`. The poster refuses
@@ -118,7 +118,14 @@ it is not an authenticated signature. Report destination matches separately.
 5. Hand over the link with: 有效期 24 小时;打开 → 确认目标平台 → 导入。That
    confirmation click doubles as the user's preview/veto step — do not try to
    automate it away.
-6. For an iteration, finish the platform-side reconciliation below after the
+6. In the handoff, give three short statuses: **Apple catalog** (storefront
+   and confirmed count), **Import link** (ready with expiry, or unavailable),
+   and **Destination library** (awaiting confirmation, reported by the user, or
+   directly verified). With a receipt, report the matched count and any wrong
+   version or missing track. Without one, keep the destination pending. If the
+   user shares a receipt later, compare recording identity and count before
+   labeling the playlist complete.
+7. For an iteration, finish the platform-side reconciliation below after the
    import succeeds. A new import link is an implementation detail, not permission
    to leave duplicate or version-numbered playlists in the user's library.
 
@@ -203,8 +210,9 @@ One line when delivering: 导入后如果有没匹配上或踩雷的歌，说一
   reconcile it back to the stable platform identity. Do not default to a top-up
   fragment.
 - `Too many requests` → wait 60s, retry once.
-- API error or format change → don't strand the user: deliver the tracklist as
-  plain text plus manual path (soundiiz.com → Import playlist → paste text), and
-  note the API issue so the skill can be updated.
+- API error or format change → deliver the ordered tracklist as one
+  `Artist - Title` entry per line. Give the [Soundiiz plain-text import steps](https://support.soundiiz.com/hc/en-us/articles/37958924057234-How-to-Import-a-Playlist-from-a-URL-CSV-File-or-Plain-Text)
+  and keep the import link and destination statuses separate. The manual route
+  still needs the user's confirmation and a destination match check.
 - Free Soundiiz converts one playlist (≤200 tracks) per transfer — normal personal
   use never hits this; only mention limits if the user does.
