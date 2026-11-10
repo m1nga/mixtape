@@ -8,7 +8,8 @@ for **Claude Code** and **OpenAI Codex** that sequences a playlist around your
 mood, seed songs, or listening taste. It checks the recordings against an Apple
 Music storefront and gives you a [Soundiiz](https://soundiiz.com) link to import
 into your chosen service. You confirm the import in Soundiiz. No platform API
-keys or developer accounts are required.
+keys or developer accounts are required for the import-link workflow. Optional
+private YouTube playlist verification needs an authorized read connection at runtime.
 
 Want the studio recording rather than a live version or cover? State that in the
 request. Mixtape checks the selected recordings in the named Apple storefront,
@@ -110,7 +111,7 @@ Then just ask for a playlist in a session — no command to memorize.
 | Platform | Import link preselect |
 |---|---|
 | Spotify, YouTube Music, YouTube, Deezer, Tidal | ✅ preselected |
-| Apple Music | one extra tap on the import page |
+| Apple Music | preselected with `applemusicapp` |
 
 ## How it works
 
@@ -168,6 +169,22 @@ City Pop，20首」）、给几首种子歌，或让它分析你已有歌单；�
 MIT © [m1nga](https://github.com/m1nga)
 
 ## What “verified” covers
+
+For a saved YouTube playlist, a playback queue is insufficient evidence. Pin the
+intended video IDs, export their exact URLs and compare the saved `PL...` playlist
+against the full ordered list. The read-only helper reports missing tracks,
+unexpected tracks and order changes. Private-library access requires an authorized
+runtime token; without access, the check stays blocked.
+See the [YouTube workflow](skills/mixtape/SKILL.md#youtube-saved-playlists).
+
+The Soundiiz response count is also checked: accepting 1 of 12 tracks is a failure
+even when the service labels its response successful. No live private playlist was
+read or changed during this release.
+
+On 2026-11-10, 23 offline tests passed, including partial acceptance, a one-track
+saved result for a twelve-track intention, pagination, changed counts, order,
+duplicates, missing authorization and protection of an existing URL export.
+Provider responses in these cases are fixtures, not live destination receipts.
 
 Apple catalog confirmation checks recording identity in the selected storefront.
 It does not prove Spotify, YouTube Music or another destination will match every

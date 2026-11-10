@@ -124,7 +124,9 @@ presenting so the user sees both comfort and discovery.
    directly verified). With a receipt, report the matched count and any wrong
    version or missing track. Without one, keep the destination pending. If the
    user shares a receipt later, compare recording identity and count before
-   labeling the playlist complete.
+   labeling the playlist complete. For a saved YouTube playlist, compare the complete
+   ordered native recording IDs using the read-back route below. A temporary queue
+   or a source accepted count does not prove that the full playlist was saved.
 7. For an iteration, finish the platform-side reconciliation below after the
    import succeeds. A new import link is an implementation detail, not permission
    to leave duplicate or version-numbered playlists in the user's library.
@@ -132,10 +134,42 @@ presenting so the user sees both comfort and discovery.
 **Destination preselect** (`destination` field): verified corenames `spotify`,
 `ytmusic` (YouTube Music), `youtube` (plain YouTube video playlist — prefer
 `ytmusic` when the user says "YouTube" but means music), `deezer`, `tidal`.
-**Apple Music has no preselect corename** — omit the
-field and tell the user to pick Apple Music on the import page (one tap; their
-Soundiiz account holds the platform authorization). Remember the user's platform in
+Use `applemusicapp` for Apple Music, as documented by the
+[public import API](https://support.soundiiz.com/hc/en-us/articles/36613501259922--API-Let-your-users-import-any-tracklist-to-Soundiiz).
+Omit the field only when the user should choose the destination. Remember the user's platform in
 `taste.md` and stop asking.
+
+## YouTube saved playlists
+
+Pin each chosen recording to an observed YouTube video ID. Check its artist,
+version and approximate duration. Copy the canonical payload to `youtube.json`,
+add a `youtubeVideoId` to every track, and retain the approved order and catalog
+fingerprint. The fingerprint covers titles and artists, not independent proof of
+the added YouTube identities; retain the source of those choices with the manifest.
+
+```bash
+python3 <skill-dir>/scripts/youtube_playlist.py youtube.json --write-urls tracks.txt
+python3 <skill-dir>/scripts/youtube_playlist.py youtube.json --playlist-id PL...
+```
+
+The first command writes one exact watch URL per line to a new file for
+Soundiiz → Import Playlist → From Plain Text. Review the selected entries and the
+destination (YouTube or YouTube Music). The normal Soundiiz POST matches titles
+and artists; the local video IDs identify the YouTube recordings expected later.
+
+A `watch_videos?video_ids=...` link is a temporary playback queue, not a saved
+playlist receipt. Obtain the saved playlist's own `PL...` ID. If an authorized
+Google OAuth read connection is available, supply its token through the runtime's
+`YOUTUBE_ACCESS_TOKEN` environment variable. Keep tokens out of messages, files and
+command arguments. Do not ask the user to paste credentials into chat.
+The second command reads all pages using [YouTube's playlistItems API](https://developers.google.com/youtube/data/reference/rest/v3/playlistItems/list)
+and checks sequence and count. Exit 0 means a match, 1 means mismatch, and 2 means
+read-back is blocked. Without a supported authorized connection, retain that gap
+and let the user inspect the saved playlist; do not invent a successful read.
+
+If only one of twelve tracks arrived, retain the intended twelve and the existing
+playlist. Report missing recordings and complete an authorized repair or supply
+the full URL list for import. Read back again before reporting verified completion.
 
 ## Iteration: one living playlist with a stable identity
 
