@@ -10,6 +10,12 @@ Music storefront and gives you a [Soundiiz](https://soundiiz.com) link to import
 into your chosen service. You confirm the import in Soundiiz. No platform API
 keys or developer accounts are required.
 
+Want the studio recording rather than a live version or cover? State that in the
+request. Mixtape checks the selected recordings in the named Apple storefront,
+then keeps the destination import pending until it has a receipt. Soundiiz
+[documents why transfers can still choose another version](https://support.soundiiz.com/hc/en-us/articles/32567703886098-Wrong-Track-Matches-Causes-How-to-Fix-Them);
+check the destination count and recordings after import.
+
 > "Make me a five-song late-night electronic mix for YouTube Music. Start with
 > 'A Walk' by Tycho, build gently, and finish somewhere quiet. Use the US
 > storefront for the catalog check."
