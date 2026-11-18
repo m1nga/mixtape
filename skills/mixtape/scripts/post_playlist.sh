@@ -68,6 +68,9 @@ if verification.get("tracklistSha256") != fingerprint:
     )
 
 clean = {key: value for key, value in payload.items() if not key.startswith("_")}
+if clean.get("destination") is None:
+    # Soundiiz opens the chooser only when this optional field is omitted.
+    clean.pop("destination", None)
 clean["tracklist"] = normalized
 with open(target, "w", encoding="utf-8") as handle:
     json.dump(clean, handle, ensure_ascii=False, indent=2)

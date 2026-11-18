@@ -1,6 +1,6 @@
 ---
 name: mixtape
-description: Make the user an authored playlist and deliver a verified one-click Soundiiz import link for Apple Music, YouTube Music, Spotify, Deezer, or Tidal without platform API keys. Supports quick orders from a scene or mood, expansion from seed songs, and taste-profile curation from playlists the user shares. Use for "make me a playlist," "songs for late-night coding," 给我来个歌单, 根据这几首帮我扩展, 找类似的歌, 分析我的听歌口味, or any request for songs to listen to. Not for audio narration, transferring an existing playlist unchanged, or controlling playback.
+description: Make the user an authored playlist and check its recordings in Apple Music and deliver a Soundiiz import link for Apple Music, YouTube Music, Spotify, Deezer, or Tidal without platform API keys. Supports quick orders from a scene or mood, expansion from seed songs, and taste-profile curation from playlists the user shares. Use for "make me a playlist," "songs for late-night coding," 给我来个歌单, 根据这几首帮我扩展, 找类似的歌, 分析我的听歌口味, or any request for songs to listen to. Not for audio narration, transferring an existing playlist unchanged, or controlling playback.
 ---
 
 # Mixtape · 亲手做的歌单
@@ -92,7 +92,6 @@ presenting so the user sees both comfort and discovery.
 2. Write the payload to a JSON file in the session scratchpad (or any temp dir):
    ```json
    {"title": "...", "description": "...", "sourceName": "Mixtape",
-    "destination": "youtube",
     "tracklist": [{"title": "...", "artists": ["...", "..."]}]}
    ```
 3. **Canonicalize before posting**: `python3 <skill-dir>/scripts/canonicalize.py
@@ -136,8 +135,10 @@ presenting so the user sees both comfort and discovery.
 `ytmusic` when the user says "YouTube" but means music), `deezer`, `tidal`.
 Use `applemusicapp` for Apple Music, as documented by the
 [public import API](https://support.soundiiz.com/hc/en-us/articles/36613501259922--API-Let-your-users-import-any-tracklist-to-Soundiiz).
-Omit the field only when the user should choose the destination. Remember the user's platform in
-`taste.md` and stop asking.
+If the user asks for either Apple Music or Spotify, asks to choose during import,
+or has no platform preference, omit `destination`. Soundiiz then lets them
+choose any eligible service. An explicit choice to decide later takes precedence
+over a saved preference. Remember an explicitly selected platform in `taste.md`.
 
 ## YouTube saved playlists
 

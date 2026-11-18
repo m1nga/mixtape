@@ -1,4 +1,4 @@
-# Playlist Builder — Get a Verified Playlist You Can Actually Import
+# Mixtape Playlist Builder — Build a Mood Playlist for Apple Music or Spotify
 
 **Your own playlist, made by your AI.**
 
@@ -6,10 +6,12 @@ Everyone's library is full of playlists made by strangers and algorithms. Mixtap
 an [agent skill](https://www.thepromptindex.com/how-to-use-ai-agent-skills-the-complete-guide.html)
 for **Claude Code** and **OpenAI Codex** that sequences a playlist around your
 mood, seed songs, or listening taste. It checks the recordings against an Apple
-Music storefront and gives you a [Soundiiz](https://soundiiz.com) link to import
-into your chosen service. You confirm the import in Soundiiz. No platform API
-keys or developer accounts are required for the import-link workflow. Optional
-private YouTube playlist verification needs an authorized read connection at runtime.
+Music storefront and gives you a temporary [Soundiiz](https://soundiiz.com)
+import link. Choose Apple Music, Spotify, YouTube Music, or another supported
+service in Soundiiz, or name one in your request to preselect it. Review the
+tracklist and confirm the transfer there. Creating the link requires no platform
+API keys. Saving requires a Soundiiz account and a connected music service, and
+depends on service eligibility and plan limits.
 
 Want the studio recording rather than a live version or cover? State that in the
 request. Mixtape checks the selected recordings in the named Apple storefront,
@@ -17,9 +19,9 @@ then keeps the destination import pending until it has a receipt. Soundiiz
 [documents why transfers can still choose another version](https://support.soundiiz.com/hc/en-us/articles/32567703886098-Wrong-Track-Matches-Causes-How-to-Fix-Them);
 check the destination count and recordings after import.
 
-> "Make me a five-song late-night electronic mix for YouTube Music. Start with
-> 'A Walk' by Tycho, build gently, and finish somewhere quiet. Use the US
-> storefront for the catalog check."
+> "Use $mixtape to make a five-song late-night electronic playlist. Start with
+> 'A Walk' by Tycho, build gently, and finish somewhere quiet. Check the US Apple
+> Music catalog and give me one link where I can choose Apple Music or Spotify."
 
 One sample result, **Low Light, Steady Hands**:
 
@@ -29,16 +31,23 @@ One sample result, **Low Light, Steady Hands**:
 4. Four Tet — Two Thousand and Seventeen
 5. Brian Eno — An Ending (Ascent)
 
-The live catalog check and local import-payload dry run had these results:
-
 | Check | Sample status |
 |---|---|
 | Apple catalog | 5 of 5 recordings confirmed in the US storefront |
-| Soundiiz link | Dry run accepted the payload for YouTube Music. No link was requested. |
-| YouTube Music library | Import untested |
+| Soundiiz import preview | Soundiiz accepted all 5 tracks and opened the playlist preview without a preset destination |
+| Destination library | Awaiting user confirmation and a transfer result |
 
-For a regular playlist request, the link status shows the expiry when Soundiiz
-issues a link. The destination status stays pending until there is import evidence.
+Each Soundiiz import link expires after 24 hours. To try the same example, use
+[the sample tracklist](skills/mixtape/examples/low-light.json) from a fresh
+checkout of this repository. Run these commands from its root to check the catalog
+and create your own preview link:
+
+```bash
+mixtape_preview=$(mktemp -d)
+python3 skills/mixtape/scripts/canonicalize.py skills/mixtape/examples/low-light.json \
+  --country us --out "$mixtape_preview/playlist.json" --report "$mixtape_preview/catalog.json"
+bash skills/mixtape/scripts/post_playlist.sh "$mixtape_preview/playlist.json"
+```
 
 After import, compare the count and recording versions in your destination.
 If the link fails, Mixtape can give you a paste-ready `Artist - Title` list for
@@ -110,8 +119,11 @@ Then just ask for a playlist in a session — no command to memorize.
 
 | Platform | Import link preselect |
 |---|---|
-| Spotify, YouTube Music, YouTube, Deezer, Tidal | ✅ preselected |
-| Apple Music | preselected with `applemusicapp` |
+| Apple Music | `applemusicapp` |
+| Spotify | `spotify` |
+| YouTube Music | `ytmusic` |
+| YouTube, Deezer, Tidal | `youtube`, `deezer`, `tidal` |
+| Choose in Soundiiz | Leave the destination unset |
 
 ## How it works
 
