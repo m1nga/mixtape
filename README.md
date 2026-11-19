@@ -1,20 +1,18 @@
-# Mixtape Playlist Builder — Build a Mood Playlist for Apple Music or Spotify
+# Mixtape Playlist Builder — Make a Mood Playlist and Check Every Track
 
-**Your own playlist, made by your AI.**
+Mixtape is an agent skill for **OpenAI Codex** and **Claude Code**. Describe a
+mood, share seed songs, or give it a playlist you love. It picks real recordings
+and puts them in an order that fits.
 
-Everyone's library is full of playlists made by strangers and algorithms. Mixtape is
-an [agent skill](https://www.thepromptindex.com/how-to-use-ai-agent-skills-the-complete-guide.html)
-for **Claude Code** and **OpenAI Codex** that sequences a playlist around your
-mood, seed songs, or listening taste. It checks the recordings against an Apple
-Music storefront and gives you a temporary [Soundiiz](https://soundiiz.com)
-import link. Choose Apple Music, Spotify, YouTube Music, or another supported
-service in Soundiiz, or name one in your request to preselect it. Review the
-tracklist and confirm the transfer there. Creating the link requires no platform
-API keys. Saving requires a Soundiiz account and a connected music service, and
-depends on service eligibility and plan limits.
+- **YouTube and YouTube Music** — With authorized access to your signed-in account,
+  Mixtape saves the exact recordings, reopens the account playlist, and checks
+  every video ID and its position. You get the saved playlist link and verified count.
+- **Apple Music, Spotify and other import destinations** — Mixtape checks the
+  Apple Music catalog and prepares a [Soundiiz](https://soundiiz.com) link. You
+  review the tracklist and confirm the transfer in Soundiiz.
 
 Want the studio recording rather than a live version or cover? State that in the
-request. Mixtape checks the selected recordings in the named Apple storefront,
+request. For the import route, Mixtape checks the recordings in the named Apple storefront,
 then keeps the destination import pending until it has a receipt. Soundiiz
 [documents why transfers can still choose another version](https://support.soundiiz.com/hc/en-us/articles/32567703886098-Wrong-Track-Matches-Causes-How-to-Fix-Them);
 check the destination count and recordings after import.
@@ -56,13 +54,13 @@ If the link fails, Mixtape can give you a paste-ready `Artist - Title` list for
 ## What it does
 
 Mixtape turns a mood, a few seed songs, or the playlists you already love into a
-sequenced playlist you authored. Before it hands anything to Soundiiz, it checks
+sequenced playlist you authored. For the Soundiiz route, it checks
 every title **and artist** against the selected Apple Music storefront, rejects
 wrong covers/remixes/DJ-mix versions, and produces a catalog evidence report. A
 fingerprint check then prevents unverified or subsequently edited tracklists from
 being posted. Iterations keep one stable library identity: revision labels stay in
 the private history, while the streaming playlist keeps its human title and
-superseded Mixtape versions are reconciled away by exact platform ID.
+in-place edits preserve the original playlist ID where supported.
 
 That matching layer matters. A beautiful 33-track recommendation is still a broken
 product when only eight songs arrive in the user's library.
@@ -111,11 +109,13 @@ git clone https://github.com/m1nga/mixtape.git ~/.agents/skills/mixtape
 
 Then just ask for a playlist in a session — no command to memorize.
 
-**Requirements**: `curl` + `python3` (present on macOS/Linux by default), and a free
-[Soundiiz](https://soundiiz.com) account with your streaming platform connected
-(that's where the import authorization lives).
+**Requirements** — YouTube needs an authorized signed-in browser or equivalent
+account access. Soundiiz imports use `curl`, `python3`, and a Soundiiz account
+connected to the chosen music service.
 
-## Supported destinations
+## Soundiiz destinations
+
+Use these settings when the user requests an import link.
 
 | Platform | Import link preselect |
 |---|---|
@@ -125,7 +125,7 @@ Then just ask for a playlist in a session — no command to memorize.
 | YouTube, Deezer, Tidal | `youtube`, `deezer`, `tidal` |
 | Choose in Soundiiz | Leave the destination unset |
 
-## How it works
+## How Soundiiz imports work
 
 The agent generates and sequences the tracklist (real, released recordings only —
 it verifies when unsure), then checks every title+artist pair against the requested
@@ -162,12 +162,10 @@ named `跑步` and removed the two superseded managed versions.
 
 ## 中文说明
 
-Mixtape 是给 Claude Code / Codex 用的歌单 skill：一句话描述场景（「周五晚做饭的
-City Pop，20首」）、给几首种子歌，或让它分析你已有歌单；它负责选歌、编排、逐首
-核对 Apple Music 曲库，再给出 Soundiiz 一键导入链接。它会同时校验歌名和歌手，
-找不到或疑似错版就停止发布，不再让“33 首只进去 8 首”到最后一步才暴露。口味档案
-存在本机 `~/.mixtape/`，越用越懂你。迭代时平台里的歌单名称保持不变，版本号只写进
-内部历史；成功导入后按精确 ID 清理旧版，并回读确认只剩一个当前歌单。
+Mixtape 可以按场景、种子歌或听歌口味编排歌单。指定 YouTube 或 YouTube Music
+时，它用已授权的账号保存精准的录音，再打开歌单核对每首和顺序，最后给出正式链接。
+用 Soundiiz 导入 Apple Music、Spotify 等服务时，它先核对 Apple Music 曲库，再给出
+导入入口。口味档案和歌单历史保存在本机 `~/.mixtape/`。
 
 ## Notes
 
@@ -180,33 +178,30 @@ City Pop，20首」）、给几首种子歌，或让它分析你已有歌单；�
 
 MIT © [m1nga](https://github.com/m1nga)
 
-## What “verified” covers
+## YouTube playlist verification
 
-For a saved YouTube playlist, a playback queue is insufficient evidence. Pin the
-intended video IDs, export their exact URLs and compare the saved `PL...` playlist
-against the full ordered list. The read-only helper reports missing tracks,
-unexpected tracks and order changes. Private-library access requires an authorized
-runtime token; without access, the check stays blocked.
-See the [YouTube workflow](skills/mixtape/SKILL.md#youtube-saved-playlists).
+For a saved playlist, Mixtape pins the intended video IDs, edits the existing
+playlist or creates one private playlist, then reopens it from the target account.
+It compares every saved ID in order, including repeats. The saved URL and verified
+count identify the result. YouTube Music is checked in its own library because
+it can show fewer items than YouTube. [YouTube Music help](https://support.google.com/youtubemusic/answer/7205933)
 
-The Soundiiz response count is also checked: accepting 1 of 12 tracks is a failure
-even when the service labels its response successful. No live private playlist was
-read or changed during this release.
+In a live maintainer run, an existing private playlist contained one of twelve
+intended tracks. The agent added the other eleven by exact watch URL through
+YouTube's own **Add videos** picker and reopened the same playlist from the
+account library. All twelve video IDs and positions matched. No account or
+playlist identifiers are included in this example.
 
-On 2026-11-10, 23 offline tests passed, including partial acceptance, a one-track
-saved result for a twelve-track intention, pagination, changed counts, order,
-duplicates, missing authorization and protection of an existing URL export.
-Provider responses in these cases are fixtures, not live destination receipts.
+See the [YouTube workflow](skills/mixtape/SKILL.md#youtube-saved-playlists) and
+[YouTube's playlist help](https://support.google.com/youtube/answer/57792).
 
-Apple catalog confirmation checks recording identity in the selected storefront.
-It does not prove Spotify, YouTube Music or another destination will match every
-track. The local fingerprint detects tracklist edits after that check; it is not
-a cryptographic signature or independent attestation. Final delivery still needs
-the destination import result and, for revisions, the library read-back.
+For Soundiiz imports, Apple catalog verification covers recording identity in
+the selected storefront. The import response shows how many tracks Soundiiz
+accepted. Completion depends on the result in the chosen destination.
 
-The 15 bundled offline tests passed on 2026-09-07 (Asia/Shanghai), including wrong-artist
-rejection and exact-ID reconciliation. Run `python3 -m unittest discover -s tests -v`
-from the installed skill directory. This is fixture evidence, not a new live import.
+Run `python3 -m unittest discover -s tests -v` from the installed skill directory
+to check matching, partial import acceptance, ordered YouTube comparisons and
+exact-ID reconciliation with fixtures.
 
 ## Author
 

@@ -1,4 +1,4 @@
 interface:
   display_name: "Playlist Builder"
-  short_description: "Build a mood playlist with checked tracks and an import link"
-  default_prompt: "Use $mixtape to make a playlist from my mood, check the tracks, and give me a link where I can pick Apple Music or Spotify."
+  short_description: "Build a mood playlist and verify the saved tracks"
+  default_prompt: "Use $mixtape to make a playlist from my mood, save it in YouTube, and verify the tracks in order."

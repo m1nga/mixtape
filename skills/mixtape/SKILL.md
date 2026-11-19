@@ -1,6 +1,6 @@
 ---
 name: mixtape
-description: Make the user an authored playlist and check its recordings in Apple Music and deliver a Soundiiz import link for Apple Music, YouTube Music, Spotify, Deezer, or Tidal without platform API keys. Supports quick orders from a scene or mood, expansion from seed songs, and taste-profile curation from playlists the user shares. Use for "make me a playlist," "songs for late-night coding," 给我来个歌单, 根据这几首帮我扩展, 找类似的歌, 分析我的听歌口味, or any request for songs to listen to. Not for audio narration, transferring an existing playlist unchanged, or controlling playback.
+description: Build a playlist from a mood, seed songs, or listening history. Save and verify ordered playlists in an authorized YouTube or YouTube Music account, or prepare a catalog-checked Soundiiz import for other or undecided services. Use for new playlists, revisions, or missing tracks, including 给我来个歌单, 扩展这几首, and 分析我的听歌口味. Excludes playback control and unchanged cross-service transfers.
 ---
 
 # Mixtape · 亲手做的歌单
@@ -45,8 +45,7 @@ filtered through that profile.
 
 **快速点单.** Parse genre, scene, mood, era, language, count, platform. Default 25
 tracks. Ask at most one clarifying question, and only if the answer would genuinely
-change the songs; otherwise decide and go — the import page is itself a preview, so
-a wrong guess costs one click, not a conversation.
+change the result. Use the service the user named and honor requests for a preview.
 
 **种子扩展.** The examples are evidence of what the user *actually* means by a genre
 word. For each group, state in one line what you infer the seeds share (era?
@@ -82,102 +81,66 @@ presenting so the user sees both comfort and discovery.
 - **Order is authorship.** Arrange an arc that fits the scene: workout ramps up,
   late-night descends, 通勤 stays level. A shuffled list is a search result, not a
   mixtape.
-- ≤200 tracks per link (API cap). More → split into volumes (Vol.1, Vol.2), one
-  link each, mind the 10 requests/min rate limit.
 
 ## Delivery
 
-1. Show the numbered tracklist in chat (with 已听/新 tags in profile mode, and the
-   one-line group inferences in seed mode).
-2. Write the payload to a JSON file in the session scratchpad (or any temp dir):
-   ```json
-   {"title": "...", "description": "...", "sourceName": "Mixtape",
-    "tracklist": [{"title": "...", "artists": ["...", "..."]}]}
-   ```
-3. **Canonicalize before posting**: `python3 <skill-dir>/scripts/canonicalize.py
-   payload.json --country <storefront>`. The script verifies title **and artist**,
-   rejects wrong artists and unwanted versions, rewrites confirmed tracks to the
-   Apple catalog's displayed metadata, and writes an evidence report. It exits
-   nonzero when any track is unconfirmed; replace those tracks and rerun. Use the
-   user's storefront country (record it in `taste.md`, e.g. GB).
-   If free-text search misses a song but an official Apple Music song page proves
-   it exists, add its numeric URL ID as `"appleMusicId": 1702056850` on that track
-   and rerun. The script looks that ID up in the target storefront and still
-   verifies its title+artist; this is evidence, never a bypass.
-   Apple confirmation covers recording identity in the named storefront. The
-   fingerprint detects later track edits. Destination matches require their own
-   evidence from the transfer result or destination library.
-
-4. POST only the fingerprinted canonical file: `bash
-   <skill-dir>/scripts/post_playlist.sh payload.canonical.json`. The poster refuses
-   unverified or post-verification edits, strips internal evidence metadata, and
-   sends Soundiiz its documented `artists` field. **Never send `artist` (singular):
-   Soundiiz accepts the request but ignores that field, leaving it to match by title
-   alone.** The script prints the import link and expiry on success.
-5. Hand over the link with: 有效期 24 小时;打开 → 确认目标平台 → 导入。That
-   confirmation click doubles as the user's preview/veto step — do not try to
-   automate it away.
-6. In the handoff, give three short statuses: **Apple catalog** (storefront
-   and confirmed count), **Import link** (ready with expiry, or unavailable),
-   and **Destination library** (awaiting confirmation, reported by the user, or
-   directly verified). With a receipt, report the matched count and any wrong
-   version or missing track. Without one, keep the destination pending. If the
-   user shares a receipt later, compare recording identity and count before
-   labeling the playlist complete. For a saved YouTube playlist, compare the complete
-   ordered native recording IDs using the read-back route below. A temporary queue
-   or a source accepted count does not prove that the full playlist was saved.
-7. For an iteration, finish the platform-side reconciliation below after the
-   import succeeds. A new import link is an implementation detail, not permission
-   to leave duplicate or version-numbered playlists in the user's library.
-
-**Destination preselect** (`destination` field): verified corenames `spotify`,
-`ytmusic` (YouTube Music), `youtube` (plain YouTube video playlist — prefer
-`ytmusic` when the user says "YouTube" but means music), `deezer`, `tidal`.
-Use `applemusicapp` for Apple Music, as documented by the
-[public import API](https://support.soundiiz.com/hc/en-us/articles/36613501259922--API-Let-your-users-import-any-tracklist-to-Soundiiz).
-If the user asks for either Apple Music or Spotify, asks to choose during import,
-or has no platform preference, omit `destination`. Soundiiz then lets them
-choose any eligible service. An explicit choice to decide later takes precedence
-over a saved preference. Remember an explicitly selected platform in `taste.md`.
+Use the requested service or the saved default. For YouTube and YouTube Music,
+use the native workflow. Use Soundiiz for a requested import link, other supported
+services, or a choice of services at import. For a tracklist preview, show the
+tracks and wait for the user to request saving.
 
 ## YouTube saved playlists
 
-Pin each chosen recording to an observed YouTube video ID. Check its artist,
-version and approximate duration. Copy the canonical payload to `youtube.json`,
-add a `youtubeVideoId` to every track, and retain the approved order and catalog
-fingerprint. The fingerprint covers titles and artists, not independent proof of
-the added YouTube identities; retain the source of those choices with the manifest.
+1. **Pin the recordings.** Match title, artist and version on the requested
+   service. Keep the intended ordered video IDs in one `history.md` entry
+   before writing. Reuse pinned IDs for retained tracks in revisions.
+2. **Save into the account.** Use the authorized signed-in target. Find the
+   existing playlist in the account library and reuse its exact `PL...` ID.
+   For a new mix, create one playlist with the agreed title and default to private.
+   Record its ID as soon as it exists. On YouTube, use **Add videos** with each exact
+   watch URL, or **Save** on the video page. On YouTube Music, use **Add to
+   playlist** on the matched recording. Preserve existing privacy, add the
+   missing entries and put them in order. On resume or an uncertain write,
+   read the saved state before retrying. If an existing target is ambiguous,
+   ask for its link.
+3. **Reopen and verify.** From the account library, reopen the saved playlist
+   on the requested service. Read every saved item and compare the ordered
+   video IDs, including duplicates, with the intended list. Confirm the visible
+   total and playlist ID. Fix discrepancies in the same playlist and reread.
+   YouTube Music can show fewer items than YouTube, so verify in Music when
+   that is the requested destination.
 
-```bash
-python3 <skill-dir>/scripts/youtube_playlist.py youtube.json --write-urls tracks.txt
-python3 <skill-dir>/scripts/youtube_playlist.py youtube.json --playlist-id PL...
-```
+Deliver the saved playlist URL and verified count, and mark the history entry
+verified. A temporary queue, import count, or save notification alone leaves
+verification pending. If account access or complete read-back is blocked, state
+the blocker, keep the ordered watch links, and request only what is needed to resume.
 
-The first command writes one exact watch URL per line to a new file for
-Soundiiz → Import Playlist → From Plain Text. Review the selected entries and the
-destination (YouTube or YouTube Music). The normal Soundiiz POST matches titles
-and artists; the local video IDs identify the YouTube recordings expected later.
+## Soundiiz import links
 
-A `watch_videos?video_ids=...` link is a temporary playback queue, not a saved
-playlist receipt. Obtain the saved playlist's own `PL...` ID. If an authorized
-Google OAuth read connection is available, supply its token through the runtime's
-`YOUTUBE_ACCESS_TOKEN` environment variable. Keep tokens out of messages, files and
-command arguments. Do not ask the user to paste credentials into chat.
-The second command reads all pages using [YouTube's playlistItems API](https://developers.google.com/youtube/data/reference/rest/v3/playlistItems/list)
-and checks sequence and count. Exit 0 means a match, 1 means mismatch, and 2 means
-read-back is blocked. Without a supported authorized connection, retain that gap
-and let the user inspect the saved playlist; do not invent a successful read.
-
-If only one of twelve tracks arrived, retain the intended twelve and the existing
-playlist. Report missing recordings and complete an authorized repair or supply
-the full URL list for import. Read back again before reporting verified completion.
+1. Show the ordered tracks. Write a scratch JSON payload with `title`,
+   `description`, `sourceName: "Mixtape"`, and `tracklist` entries containing
+   `title` and `artists` (array). Set `destination` to the chosen service. Omit it when the
+   user wants to choose during import or no service is known. Values include `applemusicapp`, `spotify`, `youtube`, `ytmusic`,
+   `deezer`, and `tidal`.
+2. Run `python3 <skill-dir>/scripts/canonicalize.py payload.json --country <storefront>`.
+   Verify title and artist in the user's Apple Music storefront. For a missed
+   search with an official song page, set the track's numeric `appleMusicId`
+   and rerun. Resolve any unconfirmed recording before posting.
+3. Run `bash <skill-dir>/scripts/post_playlist.sh payload.canonical.json`.
+   It checks the catalog fingerprint, submits the documented `artists` field,
+   and returns an import link valid for 24 hours. Split lists over 200 tracks into
+   volumes and stay within 10 requests per minute.
+4. Give the verified catalog count and link expiry. The user confirms the
+   destination and transfer in Soundiiz. Verify the imported count and
+   recordings when a destination receipt is available. For YouTube imports,
+   use the account read-back above. Keep the destination status pending until
+   the saved result can be checked.
 
 ## Iteration: one living playlist with a stable identity
 
-A revision is never a patch, a restart, or a second product. Start from the
-previous tracklist in `history.md`, keep every track the user has not vetoed, and
-apply swaps, ratio changes, or extensions to the complete list. The user's
-confirmed-loved tracks are the asset being built.
+Build revisions from the full tracklist in `history.md`. Keep retained tracks
+and apply the requested swaps, ratio changes or extensions. Prefer in-place
+edits, especially for YouTube.
 
 Keep the accepted user-facing title stable across revisions. **Never add v2/v3/v4,
 “修复版”, or similar release bookkeeping to the title in the streaming library
@@ -227,17 +190,16 @@ other services with the same preflight → mutate → read-back contract. If no
 authorized write surface exists, say so plainly and leave the reconciled state
 unclaimed rather than telling the user a duplicate is “the new version.”
 
-## After the import (lightweight, never nagging)
+## Feedback
 
-One line when delivering: 导入后如果有没匹配上或踩雷的歌，说一声。When they report:
+When the user gives feedback:
 
 - **缺歌** → append to `misses.md`; repair the matcher or replace the failures in
   the next complete iteration. A top-up link is allowed only when the user
   explicitly asks to manage a patch separately.
 - **踩雷** → record to `taste.md` 雷区 with the *reason* if given (太吵? 年代不对?).
-- Log the mixtape to `history.md` either way.
 
-## When things break
+## Soundiiz recovery
 
 - Tracks still 未找到 on import despite canonical names → treat it as a failed
   delivery, not user cleanup. Re-check the target storefront, replace or pin the
@@ -249,5 +211,3 @@ One line when delivering: 导入后如果有没匹配上或踩雷的歌，说一
   `Artist - Title` entry per line. Give the [Soundiiz plain-text import steps](https://support.soundiiz.com/hc/en-us/articles/37958924057234-How-to-Import-a-Playlist-from-a-URL-CSV-File-or-Plain-Text)
   and keep the import link and destination statuses separate. The manual route
   still needs the user's confirmation and a destination match check.
-- Free Soundiiz converts one playlist (≤200 tracks) per transfer — normal personal
-  use never hits this; only mention limits if the user does.
