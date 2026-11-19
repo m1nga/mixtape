@@ -6,7 +6,8 @@ and puts them in an order that fits.
 
 - **YouTube and YouTube Music** — With authorized access to your signed-in account,
   Mixtape saves the exact recordings, reopens the account playlist, and checks
-  every video ID and its position. You get the saved playlist link and verified count.
+  every video ID and its position. When duration is requested, it checks the
+  selected recordings against the time window before saving.
 - **Apple Music, Spotify and other import destinations** — Mixtape checks the
   Apple Music catalog and prepares a [Soundiiz](https://soundiiz.com) link. You
   review the tracklist and confirm the transfer in Soundiiz.

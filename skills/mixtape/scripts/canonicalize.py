@@ -66,6 +66,34 @@ def tracklist_fingerprint(tracklist: list[dict[str, Any]]) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def youtube_recording_evidence(tracks: list[dict[str, Any]]) -> dict[str, Any]:
+    """Fingerprint ordered user-pinned destination evidence, independently of Apple."""
+    if not tracks:
+        raise ValueError("No YouTube recordings to pin.")
+    recordings = []
+    for index, track in enumerate(tracks, 1):
+        video_id = track.get("youtubeVideoId")
+        if not isinstance(video_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]{11}", video_id):
+            raise ValueError(f"Pin the exact YouTube video ID for track {index}.")
+        durations = [track[k] for k in ("durationSeconds", "youtubeDurationSeconds") if k in track]
+        if any(type(value) is not int or value <= 0 for value in durations):
+            raise ValueError(f"Track {index} needs a positive integer duration in seconds.")
+        if len(durations) == 2 and durations[0] != durations[1]:
+            raise ValueError(f"Track {index} has conflicting YouTube durations.")
+        recordings.append([video_id, durations[0] if durations else None])
+    encoded = json.dumps(recordings, separators=(",", ":")).encode()
+    total = sum(row[1] for row in recordings) if all(row[1] is not None for row in recordings) else None
+    return {"youtubeRecordingSha256": hashlib.sha256(encoded).hexdigest(),
+            "youtubeTotalDurationSeconds": total}
+
+
+def check_recording_evidence(stored: dict[str, Any], current: dict[str, Any]) -> None:
+    if "youtubeRecordingSha256" in stored or "youtubeTotalDurationSeconds" in stored:
+        if any(key not in stored or stored[key] != value or type(stored[key]) is not type(value)
+               for key, value in current.items()):
+            raise ValueError("YouTube IDs, their order, or their durations changed after pinning.")
+
+
 def api_search(
     term: str, country: str, *, entity: str = "song", limit: int = 25
 ) -> list[dict[str, Any]]:
@@ -290,6 +318,23 @@ def main() -> int:
     with args.path.open(encoding="utf-8") as handle:
         payload = json.load(handle)
 
+    tracks = payload.get("tracklist", [])
+    supplied_evidence = payload.get("_mixtape", {})
+    recording_evidence = {}
+    try:
+        pinned_tracks = [track for track in tracks if "youtubeVideoId" in track]
+        if pinned_tracks:
+            snapshot = youtube_recording_evidence(pinned_tracks)
+            if len(pinned_tracks) == len(tracks):
+                recording_evidence = snapshot
+        if "youtubeRecordingSha256" in supplied_evidence or "youtubeTotalDurationSeconds" in supplied_evidence:
+            if not recording_evidence:
+                raise ValueError("A previously pinned YouTube recording is missing.")
+            check_recording_evidence(supplied_evidence, recording_evidence)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
     reports: list[dict[str, Any]] = []
     not_found: list[str] = []
     changed = 0
@@ -313,6 +358,11 @@ def main() -> int:
         original = {"title": title, "artists": artists}
         if catalog_id is not None:
             original["appleMusicId"] = catalog_id
+        # Apple only replaces catalog labels. Retain destination-specific IDs, timing
+        # and original recording evidence rather than substituting Apple duration.
+        destination = {key: value for key, value in track.items()
+                       if key not in ("title", "artist", "artists", "appleMusicId")}
+        original.update(destination)
         report = {"index": index, "input": original, **evidence}
         if canonical is None:
             normalized_tracks.append(original)
@@ -320,6 +370,7 @@ def main() -> int:
             not_found.append(label)
             print(f"❌ {label}: {evidence['reason']}")
         else:
+            canonical = {**destination, **canonical}
             normalized_tracks.append(canonical)
             report["canonical"] = canonical
             if canonical["title"] != title or canonical["artists"] not in artists:
@@ -335,6 +386,7 @@ def main() -> int:
     payload["tracklist"] = normalized_tracks
     verified = not not_found and bool(normalized_tracks)
     payload["_mixtape"] = {
+        **recording_evidence,
         "catalogVerified": verified,
         "storefront": args.country.lower(),
         "tracklistSha256": tracklist_fingerprint(normalized_tracks),

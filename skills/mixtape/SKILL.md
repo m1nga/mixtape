@@ -18,7 +18,7 @@ would name, not like an algorithm ("周五晚·华语摇滚快车", not "Chinese
 ## State: ~/.mixtape/
 
 Persistent memory lives outside this package in `~/.mixtape/` (create it and the
-files on first use):
+files on first use when the host provides durable storage):
 
 | File | Holds | Touch when |
 |---|---|---|
@@ -27,8 +27,9 @@ files on first use):
 | `misses.md` | Tracks that failed to match on a platform: `- 歌名 — 艺人 (平台, 日期)` | Read before generating (avoid repeats); append when user reports 缺歌 |
 
 The profile is what makes the agent smarter over time. A one-line update after each
-session beats a perfect schema. Two rules keep it honest: what the user says *now*
-always beats what the files remember (update the file, don't argue), and a single
+session beats a perfect schema. In a temporary web workspace, only promise
+cross-chat recovery if the host can reopen the same storage. Two rules keep it
+honest: what the user says *now* always beats what the files remember, and a single
 scene order is not taste evidence — a first-time "City Pop for cooking" records the
 platform default, not "likes City Pop".
 
@@ -92,8 +93,15 @@ tracks and wait for the user to request saving.
 ## YouTube saved playlists
 
 1. **Pin the recordings.** Match title, artist and version on the requested
-   service. Keep the intended ordered video IDs in one `history.md` entry
-   before writing. Reuse pinned IDs for retained tracks in revisions.
+   service. Record the exact `youtubeVideoId` and verified `durationSeconds`
+   for each position. For a duration request, sum the selected recordings,
+   including each repeat, and adjust the selection before presenting it.
+   For example, use a 58–62 minute window for an approximately one-hour mix.
+   Seal the ordered recording evidence before saving:
+   `python3 <skill-dir>/scripts/youtube_playlist.py reviewed.json --pin-recordings pinned.json --duration-range 58 62`.
+   The time window is optional. If an exact duration is missing, leave the
+   total unverified. Retain the pinned IDs for unchanged tracks in revisions.
+   Apple catalog matching and YouTube recording evidence use separate fingerprints.
 2. **Save into the account.** Use the authorized signed-in target. Find the
    existing playlist in the account library and reuse its exact `PL...` ID.
    For a new mix, create one playlist with the agreed title and default to private.
@@ -110,9 +118,11 @@ tracks and wait for the user to request saving.
    YouTube Music can show fewer items than YouTube, so verify in Music when
    that is the requested destination.
 
-Deliver the saved playlist URL and verified count, and mark the history entry
-verified. A temporary queue, import count, or save notification alone leaves
-verification pending. If account access or complete read-back is blocked, state
+Deliver the saved playlist URL, verified count, and the total from the exact
+recordings when known. Mark the history entry verified only after the requested
+library passes read-back. The helper's `--playlist-id` reads YouTube Data API IDs;
+for YouTube Music, also reopen the playlist in Music. A temporary queue, import
+count, or save notification alone leaves verification pending. If account access or complete read-back is blocked, state
 the blocker, keep the ordered watch links, and request only what is needed to resume.
 
 ## Soundiiz import links
